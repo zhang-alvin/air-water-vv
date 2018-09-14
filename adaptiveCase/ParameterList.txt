@@ -1,25 +1,48 @@
-    ("strong", False, "Use strong BC for NSE"),
-    ("openTop", True, "Open the top of the tank to the atmosphere"),
-    ("he", 0.05, "Maximum mesh element diameter"),
-    ("genMesh", False, "Generate a new mesh"),
-    ("T", 1.0, "Simulate over over the interval [0,T]"),
-    ("dt_out", 0.01, "Save the solution every dt_out steps"),
-    ("gauges", True, "Collect data for validation"),
-    ("cfl",0.33, "CFL number to use for time stepping"),
+## Boundary Conditions
+("strong", False, "Use strong BC for NSE"),
+("openTop", True, "Open the top of the tank to the atmosphere"),
+
+## Numerical Models
     ("rans3p",False, "Use RANS3P model insteady of RANS2P"),
     ("useOnlyVF",False, "Turn off CLSVOF"),
-    ("usePUMI", True, "usePUMI workflow")
-
-timeDiscretization = 'be'
-timeOrder = 1
-
-useHex     = False
 useRBLES   = 0.0
 applyCorrection=True
 useVF = 0.0
 useOnlyVF = False
 useRANS = 0 # 0 -- None
+#turbulence
+ns_closure=0 #1-classic smagorinsky, 2-dynamic smagorinsky, 3 -- k-epsilon, 4 -- k-omega
 
+
+
+## Time Discretization
+timeDiscretization = 'be'
+timeOrder = 1
+    ("dt_out", 0.01, "Save the solution every dt_out steps"),
+    ("cfl",0.33, "CFL number to use for time stepping"),
+dt_init  =0.001
+dt_fixed = opts.dt_out
+nDTout = int(round(T/dt_fixed))
+
+
+## Simulation Settings
+    ("T", 1.0, "Simulate over over the interval [0,T]"),
+# Water
+rho_0 = 998.2
+nu_0  = 1.004e-6
+
+# Air
+rho_1 = 1.205
+nu_1  = 1.500e-5 
+
+# Surface tension
+sigma_01 = 0.0
+
+# Gravity
+g = [0.0,0.0,-9.8]
+
+
+## Spatial Discretization
 nd = 3
 if spaceOrder == 1:
     hFactor=1.0
@@ -29,17 +52,14 @@ if spaceOrder == 1:
     elementQuadrature = Quadrature.SimplexGaussQuadrature(nd,3)
     elementBoundaryQuadrature = Quadrature.SimplexGaussQuadrature(nd-1,3) 	    
 
-# Domain and mesh
+## Domain and mesh
 nLevels = 1
 nLayersOfOverlapForParallel = 0
     parallelPartitioningType = MeshTools.MeshParallelPartitioningTypes.element
     domain.MeshOptions.setParallelPartitioningType('element')
 
-dt_init  =0.001
-dt_fixed = opts.dt_out
-nDTout = int(round(T/dt_fixed))
 
-# Numerical parameters
+## Numerical parameters
 ns_forceStrongDirichlet = opts.strong
 ns_shockCapturingFactor  = 0.9
 ns_lag_shockCapturing = True
@@ -70,24 +90,8 @@ mcorr_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
 kappa_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
 dissipation_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
 
-#turbulence
-ns_closure=0 #1-classic smagorinsky, 2-dynamic smagorinsky, 3 -- k-epsilon, 4 -- k-omega
 
-# Water
-rho_0 = 998.2
-nu_0  = 1.004e-6
-
-# Air
-rho_1 = 1.205
-nu_1  = 1.500e-5 
-
-# Surface tension
-sigma_01 = 0.0
-
-# Gravity
-g = [0.0,0.0,-9.8]
-
-# Initial condition
+## Initial condition
 waterLine_x = 1.22
 waterLine_z = 0.55
 
