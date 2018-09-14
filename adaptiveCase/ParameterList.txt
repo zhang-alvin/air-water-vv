@@ -1,0 +1,138 @@
+    ("strong", False, "Use strong BC for NSE"),
+    ("openTop", True, "Open the top of the tank to the atmosphere"),
+    ("he", 0.05, "Maximum mesh element diameter"),
+    ("genMesh", False, "Generate a new mesh"),
+    ("T", 1.0, "Simulate over over the interval [0,T]"),
+    ("dt_out", 0.01, "Save the solution every dt_out steps"),
+    ("gauges", True, "Collect data for validation"),
+    ("cfl",0.33, "CFL number to use for time stepping"),
+    ("rans3p",False, "Use RANS3P model insteady of RANS2P"),
+    ("useOnlyVF",False, "Turn off CLSVOF"),
+    ("usePUMI", True, "usePUMI workflow")
+
+timeDiscretization = 'be'
+timeOrder = 1
+
+useHex     = False
+useRBLES   = 0.0
+applyCorrection=True
+useVF = 0.0
+useOnlyVF = False
+useRANS = 0 # 0 -- None
+
+nd = 3
+if spaceOrder == 1:
+    hFactor=1.0
+    PSTAB=1.0
+    pbasis=FemTools.C0_AffineLinearOnSimplexWithNodalBasis
+    basis=FemTools.C0_AffineLinearOnSimplexWithNodalBasis
+    elementQuadrature = Quadrature.SimplexGaussQuadrature(nd,3)
+    elementBoundaryQuadrature = Quadrature.SimplexGaussQuadrature(nd-1,3) 	    
+
+# Domain and mesh
+nLevels = 1
+nLayersOfOverlapForParallel = 0
+    parallelPartitioningType = MeshTools.MeshParallelPartitioningTypes.element
+    domain.MeshOptions.setParallelPartitioningType('element')
+
+dt_init  =0.001
+dt_fixed = opts.dt_out
+nDTout = int(round(T/dt_fixed))
+
+# Numerical parameters
+ns_forceStrongDirichlet = opts.strong
+ns_shockCapturingFactor  = 0.9
+ns_lag_shockCapturing = True
+ns_lag_subgridError = True
+ls_shockCapturingFactor  = 0.9
+ls_lag_shockCapturing = True
+ls_sc_uref  = 1.0
+ls_sc_beta  = 1.5
+vof_shockCapturingFactor = 0.9
+vof_lag_shockCapturing = True
+vof_sc_uref = 1.0
+vof_sc_beta = 1.5
+rd_shockCapturingFactor  = 0.9
+rd_lag_shockCapturing = False
+epsFact_density    = 1.5
+epsFact_viscosity  = epsFact_curvature  = epsFact_vof = epsFact_consrv_heaviside = epsFact_consrv_dirac = epsFact_density
+epsFact_redistance = 0.33
+epsFact_consrv_diffusion = 10.0
+redist_Newton = True
+pressureincrement_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+pressure_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+phi_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+ns_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+vof_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+ls_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+rd_nl_atol_res = max(1.0e-8,0.01*he)
+mcorr_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+kappa_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+dissipation_nl_atol_res = max(1.0e-8,0.01*he**2/2.0)
+
+#turbulence
+ns_closure=0 #1-classic smagorinsky, 2-dynamic smagorinsky, 3 -- k-epsilon, 4 -- k-omega
+
+# Water
+rho_0 = 998.2
+nu_0  = 1.004e-6
+
+# Air
+rho_1 = 1.205
+nu_1  = 1.500e-5 
+
+# Surface tension
+sigma_01 = 0.0
+
+# Gravity
+g = [0.0,0.0,-9.8]
+
+# Initial condition
+waterLine_x = 1.22
+waterLine_z = 0.55
+
+def signedDistance(x):
+    phi_x = x[0]-waterLine_x
+    phi_z = x[2]-waterLine_z 
+    if phi_x < 0.0:
+        if phi_z < 0.0:
+            return max(phi_x,phi_z)
+        else:
+            return phi_z
+    else:
+        if phi_z < 0.0:
+            return phi_x
+        else:
+            return math.sqrt(phi_x**2 + phi_z**2)
+
+%%%% RANS2P %%%%%
+
+timeIntegration = BackwardEuler_cfl
+timeOrder=1
+
+cients = RANS2P.Coefficients(epsFact=ct.epsFact_viscosity,
+                                   sigma=0.0,
+                                   rho_0 = ct.rho_0,
+                                   nu_0 = ct.nu_0,
+                                   rho_1 = ct.rho_1,
+                                   nu_1 = ct.nu_1,
+                                   g=ct.g,
+                                   nd=nd,
+                                   ME_model=ct.V_model,
+                                   VF_model=ct.VOF_model,
+                                   LS_model=ct.LS_model,
+                                   epsFact_density=ct.epsFact_density,
+                                   stokes=False,
+                                   useVF=ct.useVF,
+           useRBLES=ct.useRBLES,
+           useMetrics=1.0,
+                                   eb_adjoint_sigma=1.0,
+                                   eb_penalty_constant=10.0,
+                                   forceStrongDirichlet=ct.ns_forceStrongDirichlet,
+                                   turbulenceClosureModel=ct.ns_closure,
+                                   NONCONSERVATIVE_FORM=1.0,
+           LAG_LES=0.0)
+
+if not ns_forceStrongDirichlet:
+    conservativeFlux = None#{0:'pwl-bdm-opt'}
+
