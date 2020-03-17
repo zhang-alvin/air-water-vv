@@ -195,15 +195,18 @@ body.setBoundaryFlags([0])  # index of particle
 chbod = body.ChBody
 pos = pychrono.ChVectorD(0.5, opts.tank_dim[1]/2,0.) #set initial position
 rot = pychrono.ChQuaternionD(1., 0., 0., 0.) #no initial rotation
+vel = pychrono.ChVectorD(0.0, 0.0,0.0)
 mass = opts.mass
 #I = (3.14*(opts.radius**4)/2.)*opts.mass
 #inertia = pychrono.ChVectorD(1., 1., I)
 chbod.SetPos(pos)
 chbod.SetRot(rot)
+chbod.SetPos_dt(vel)
 #chbod.SetMass(mass)
 #chbod.SetInertiaXX(inertia)
 #chbod.SetBodyFixed(True)
-body.setConstraints(free_x=np.array([0., 1., 0.]), free_r=np.array([0., 0., 0.]))
+#body.setConstraints(free_x=np.array([0., 1., 0.]), free_r=np.array([0., 0., 0.]))
+body.setConstraints(free_x=np.array([0., 0., 0.]), free_r=np.array([0., 0., 0.]))
 body.setRecordValues(all_values=True)
 #body.setPrescribedMotionSine(opts.At[1],1./opts.Tt[1])
 #body.setApplyBuoyancy(False)
@@ -463,3 +466,11 @@ m.rans2p.p.coefficients.eb_bc_penalty_constant = 100.#/nu_0#Re
 #            flags_rigidbody[i] = 1
 #m.addedMass.p.coefficients.flags_rigidbody = flags_rigidbody
 
+m.rans2p.p.coefficients.ball_center = np.array([[0.5, opts.tank_dim[1]/2,0.0],])
+m.rans2p.p.coefficients.ball_radius = np.array([opts.radius,])
+m.rans2p.p.coefficients.ball_velocity = np.array([[0.0,0.0,0.0],])
+m.rans2p.p.coefficients.ball_angular_velocity = np.array([[0.0,0.0,0.0],])
+m.rans2p.p.coefficients.particle_epsFact=1.5
+m.rans2p.p.coefficients.particle_alpha=1000.0
+m.rans2p.p.coefficients.particle_beta=1000.0
+m.rans2p.p.coefficients.particle_penalty_constant=100.0
